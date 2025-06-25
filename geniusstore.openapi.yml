@@ -1,305 +1,189 @@
-openapi: 3.0.4
+openapi: 3.0.0
 info:
-  title: Genius Incentizap | OpenAPI 3.0
-  description: Documentação para utilização da API Genius para o Incentizap
+  title: Genius Store API | Incentizap
+  description: API da plataforma Genius Store para integração da .
+  version: 1.0.0
   contact:
-    email: igor.ferraz@eaimkt.com.br
-  version: 1.0.12
+    name: Angelo Servo
+    email: angelo.servo@eaimkt.com.br
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
 servers:
-  - url: https://pseudo-api.genius.com
+  - url: https://pseudo-api.geniustore.com.br
 tags:
   - name: Autenticação
-    description: Métodos para autenticação
+    description: Métodos de autenticação de usuário da API
   - name: Participantes
-    description: Métodos de participantes
+    description: Métodos de acesso as informações de participante
+  - name: Pontos
+    description: Métodos de acesso a pontuação do participante
+  - name: Pedidos
+    description: Métodos de acesso aos pedidos do participante
   - name: Fale Conosco
-    description: Métodos de fale conosco
-  - name: KPIs
-    description: Métodos de KPIs / extrato / desempenho
-  - name: Rankings
-    description: Métodos de rankings
-  - name: Conteúdos
-    description: Métodos de conteúdos
-  - name: Notícias
-    description: Métodos de notícias
-  - name: Games
-    description: Métodos de games
+    description: Métodos de acesso aos chamados do participante
 paths:
-  /api/oAuth2/token:
+  /token:
     post:
       tags:
         - Autenticação
-      summary: Obter token de acesso
-      description: Obtém o token para acessar métodos protegidos
-      operationId: getToken
+      summary: Geração de token OAuth2
+      description: Retorna um token JWT usando client_credentials
       requestBody:
-        description: Informações de autenticação fornecidas pela EAÍ
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  example: client_credentials
+                client_id:
+                  type: string
+                  example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                client_secret:
+                  type: string
+                  example: string
+      responses:
+        '200':
+          description: Token gerado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: bearer
+                  expires_in:
+                    type: integer
+        '400':
+          description: Requisição inválida ou credenciais incorretas
+
+  /api/participantes/busca:
+    post:
+      tags:
+        - Participantes
+      summary: Busca participante através do número de celular
+      description: |
+        Busca um participante a partir do número de celular informado no corpo da requisição. Valida se está ativo, com o número validado e vinculado à campanha do token.
+      operationId: buscaParticipante
+      requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenRequest'
+              $ref: '#/components/schemas/BuscaParticipanteRequest'
       responses:
         '200':
-          description: Resposta de sucesso
+          description: Resultado da busca
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenResponse'
-        '401':
-          description: Unauthorized
+                $ref: '#/components/schemas/BuscaParticipanteResponse'
         '400':
-          description: Bad Request
-  
-  /api/participante/pesquisa:
-    get:
-      tags:
-        - Participantes
-      summary: Obter um participante pelo telefone e/ou número
-      description: |-
-        Obtém o <strong>primeiro</strong> participante que satisfaça os critérios.<br>
-        É obrigatório informar <strong>ao menos</strong> um parâmetro (telefone e/ou e-mail).
-      operationId: getParticipanteSimples
-      parameters:
-        - name: telefone
-          in: query
-          description: |-
-            Número de telefone com DDD (apenas números).<br>
-            Será comparado com ambos os campos: telefone e celular.
-          schema:
-            type: string
-            example: 11988888888
-        - name: email
-          in: query
-          description: E-mail
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Resposta de sucesso
+          description: Campo celular não fornecido
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipanteSimplesResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
+                $ref: '#/components/schemas/ErroResponse'
         '404':
-          description: Not Found
+          description: Participante não encontrado
       security:
-        - BearerAuth: []
-        
-  /api/participante/{participanteId}:
-    get:
+        - bearerAuth: []
+
+  /api/participantes/valida:
+    post:
       tags:
         - Participantes
-      summary: Obter um participante pelo id
-      description: Obtém um participante pelo id
-      operationId: getParticipante
-      parameters:
-        - name: participanteId
-          in: path
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
+      summary: Efetua a dupla checagem através de e-mail
+      description: |
+        Valida se o e-mail informado pelo usuário é do participante encontrado via número de celular.
+      operationId: validarParticipantePorEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidaParticipanteRequest'
       responses:
         '200':
-          description: Resposta de sucesso
+          description: Resultado da validação
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipanteResponse'
+                $ref: '#/components/schemas/ValidaParticipanteResponse'
+              examples:
+                sucesso:
+                  summary: Retorno de sucesso
+                  value:
+                    - Erro: null
+                      ParticipanteId: 123
+                      Nome: "João da Silva"
+                      Campanha: "Incentivo Cliente"
+                erroValidacao:
+                  summary: Exemplo de erro de validação no 200
+                  value:
+                    - Erro:
+                        Mensagem: "Participante Inativo."
+                      ParticipanteId: null
+                      Nome: null
+                      Campanha: null
+                    - Erro:
+                        Mensagem: "Participante ainda não efetuou a validação do número de celular."
+                      ParticipanteId: null
+                      Nome: null
+                      Campanha: null
+                    - Erro:
+                        Mensagem: "Participante não pertence a campanha ou a campanha já encerrou."
+                      ParticipanteId: null
+                      Nome: null
+                      Campanha: null
         '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
+          description: Campo celular e/ou email não fornecidos ou mal formatados
         '404':
-          description: Not Found
+          description: Participante não encontrado
       security:
-        - BearerAuth: []
-        
-  /api/participante/{participanteId}/saldo:
-    get:
+        - bearerAuth: []
+
+  /api/participantes/acesso:
+    post:
       tags:
         - Participantes
-      summary: Obter o saldo de um participante
-      description: Obtém o saldo um participante
-      operationId: getParticipanteSaldo
-      parameters:
-        - name: participanteId
-          in: path
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
+      summary: Retorna url para acesso ao catálogo
+      description: |
+        Valida se o participante faz parte de uma campanha com login SSO (Single Sign On), para retornar a url de acesso
+      operationId: acessoParticipante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipanteRequest'
       responses:
         '200':
-          description: Resposta de sucesso
+          description: Retorno da url de acesso
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipanteSaldoResponse'
+                $ref: '#/components/schemas/AcessoParticipanteResponse'
         '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
+          description: Campo celular e/ou email não fornecidos ou mal formatados
+        '404':
+          description: Participante não encontrado
       security:
-        - BearerAuth: []
-        
-  /api/participante/{participanteId}/campanhas:
-    get:
-      tags:
-        - Participantes
-      summary: Obter campanhas de um participante
-      description: Obtém todas as campanhas de um participante
-      operationId: getCampanhasByParticipante
-      parameters:
-        - name: participanteId
-          in: path
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CampanhaResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-        
-  /api/participante/{participanteId}/campanha/{campanhaId}/menus:
-    get:
-      tags:
-        - Participantes
-      summary: Obter menus de acordo com o participante e campanha
-      description: |-
-        Obtém os menus de acordo com o participante e campanha.
-        
-        <strong>Enum de Jornada</strong>:
-        1. FaleConosco
-        2. FAQ
-        3. Extrato
-        4. Ranking
-        5. Conteudo
-        6. Games
-        7. Comunicados
-        8. Catalogo
-        9. Cadastro
-        10. Noticias
-      operationId: getMenusByParticipante
-      parameters:
-        - name: participanteId
-          in: path
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: campanhaId
-          in: path
-          description: ID da Campanha
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MenuResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-        
-  /api/participante/{participanteId}/campanha/{campanhaId}/faleconosco:
-    get:
-      tags:
-        - Participantes
-      summary: Obter chamados do Fale Conosco de acordo com o participante e campanha
-      description: Obtém chamados do fale conosco de acordo com o participante e campanha.
-      operationId: getChamadosByParticipante
-      parameters:
-        - name: participanteId
-          in: path
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: campanhaId
-          in: path
-          description: ID da Campanha
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ChamadoResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
+        - bearerAuth: []
 
   /api/faleconosco/assuntos:
     get:
       tags:
         - Fale Conosco
-      summary: Obter assuntos do fale conosco
-      description: Obtém assuntos do fale conosco
-      operationId: getAssuntosFaleConosco
+      summary: Lista assuntos do fale conosco
+      description: Obtém assuntos do fale conosco para abertura de chamados
+      operationId: listaAssuntosFaleConosco
       responses:
         '200':
           description: Resposta de sucesso
@@ -314,54 +198,57 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErroResponse'
         '401':
           description: Unauthorized
       security:
-        - BearerAuth: []
+        - bearerAuth: []
 
-  /api/faleconosco:
-    get:
+  /api/faleconosco/chamados:
+    post:
       tags:
         - Fale Conosco
-      summary: Obter um chamado do fale conosco por protocolo
-      description: Obtém um chamado do fale conosco por protocolo
-      operationId: getChamado
-      parameters:
-        - name: protocolo
-          in: query
-          description: Protocolo
-          required: true
-          schema:
-            type: string
+      summary: Obter lista de chamados
+      description: |
+        Obtém a lista de chamados do participante
+      operationId: getChamados
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipanteRequest'
       responses:
         '200':
           description: Resposta de sucesso
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChamadoResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemListaChamadosResponse'
         '400':
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErroResponse'
         '401':
           description: Unauthorized
         '404':
           description: Not Found
       security:
-        - BearerAuth: []
-        
-  /api/faleconosco/simplificado:
+        - bearerAuth: []
+
+  /api/faleconosco/chamado:
     post:
       tags:
         - Fale Conosco
-      summary: Cria um chamado
-      description: Cria um chamado para um participante
-      operationId: postChamado
+      summary: Obter dados de um chamado do fale conosco
+      description: Obtém os dados de um chamado do fale conosco pelo Id do chamado
+      operationId: getChamado
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -378,34 +265,95 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErroResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+      security:
+        - bearerAuth: []
+
+  /api/faleconosco/novo:
+    post:
+      tags:
+        - Fale Conosco
+      summary: Abrir um chamado
+      description: Abrir um chamado de fale conosco para um participante
+      operationId: abriChamado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NovoChamadoRequest'
+      responses:
+        '200':
+          description: Resposta de sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChamadoResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResponse'
         '401':
           description: Unauthorized
       security:
-        - BearerAuth: []
-        
-  /api/kpi/filtros:
-    get:
+        - bearerAuth: []
+
+  /api/pontos/saldo:
+    post:
       tags:
-        - KPIs
-      summary: Obter os possíveis filtros do extrato
-      description: Obtém os tipos de exibições do extrato
-      operationId: getFiltrosKPI
-      parameters:
-        - name: participanteId
-          in: query
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: campanhaId
-          in: query
-          description: ID da Campanha
-          required: true
-          schema:
-            type: string
-            format: uuid
+        - Pontos
+      summary: Busca saldo do participante
+      description: |
+        Retorna o saldo de pontos (créditos formatados) e o nome do ponto associada ao token, para o Participante informado.
+      operationId: obterSaldoParticipante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipanteRequest'
+      responses:
+        '200':
+          description: Saldo retornado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Saldo:
+                    type: string
+                    description: Saldo de créditos formatado
+                    example: "500,00"
+                  Nome:
+                    type: string
+                    description: Denominação do ponto
+                    example: "PONTOS"
+        '400':
+          description: Requisição inválida
+        '401':
+          description: Não autorizado (token ausente ou inválido)
+      security:
+        - bearerAuth: []
+
+  /api/pedidos:
+    post:
+      tags:
+        - Pedidos
+      summary: Obter lista de pedidos
+      description: |
+        Obtém a lista de pedidos do participante
+      operationId: getPedidos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipanteRequest'
       responses:
         '200':
           description: Resposta de sucesso
@@ -414,82 +362,34 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ExtratoFiltroResponse'
+                  $ref: '#/components/schemas/ItemListaPedidosResponse'
         '400':
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErroResponse'
         '401':
           description: Unauthorized
+        '404':
+          description: Not Found
       security:
-        - BearerAuth: []
-        
-  /api/kpi/extrato-incentizap:
-    get:
+        - bearerAuth: []
+
+  /api/pedidos/detalhe:
+    post:
       tags:
-        - KPIs
-      summary: Obter extrato de um participante
-      description: |-
-        Obtém extrato de um participante em um determinado período.
-        
-        <strong>Enum de Exibição</strong>:
-          1. Pontuação total
-          2. Extrato detalhado
-      operationId: getKPIs
-      parameters:
-        - name: participanteId
-          in: query
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: campanhaId
-          in: query
-          description: ID da Campanha
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: exibicao
-          in: query
-          description: Enum de Exibição
-          required: true
-          schema:
-            type: integer
-            description: |-
-              1. Pontuação total
-              2. Extrato detalhado
-            enum: [1, 2]
-            x-enum-descriptions:
-              - Pontuação total
-              - Extrato detalhado
-        - name: ano
-          in: query
-          description: Ano
-          required: true
-          schema:
-            type: integer
-        - name: mes
-          in: query
-          description: Mês
-          required: true
-          schema:
-            type: integer
-        - name: distribuidoraId
-          in: query
-          description: ID da Distribuidora
-          schema:
-            type: string
-            format: uuid
-        - name: lideradoId
-          in: query
-          description: ID do Liderado
-          schema:
-            type: string
-            format: uuid
+        - Pedidos
+      summary: Obter detalhes do pedido solicitado
+      description: |
+        Obtém os detalhes do pedido do participante
+      operationId: getPedido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoRequest'
       responses:
         '200':
           description: Resposta de sucesso
@@ -498,875 +398,269 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ExtratoResponse'
+                  $ref: '#/components/schemas/PedidoResponse'
         '400':
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErroResponse'
         '401':
           description: Unauthorized
+        '404':
+          description: Not Found
       security:
-        - BearerAuth: []
-        
-  /api/ranking/periodos:
-    get:
-      tags:
-        - Rankings
-      summary: Obter os períodos de ranking
-      description: Obtém os períodos de ranking disponíveis para a campanha
-      operationId: getRankingPeriodos
-      parameters:
-        - name: campanhaId
-          in: query
-          description: ID da Campanha
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RankingPeriodoResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-        
-  /api/ranking/filtros-amigaveis:
-    get:
-      tags:
-        - Rankings
-      summary: Obter os filtros amigáveis de ranking
-      description: Obtém os filtros amigáveis de ranking
-      operationId: getRankingFiltros
-      parameters:
-        - name: ano
-          in: query
-          description: Ano
-          required: true
-          schema:
-            type: integer
-        - name: mes
-          in: query
-          description: Mês
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RankingFiltroResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-        
-  /api/ranking/incentizap:
-    get:
-      tags:
-        - Rankings
-      summary: Obter o ranqueamento
-      description: Obtém o ranqueamento de acordo com a parametrização
-      operationId: getRanking
-      parameters:
-        - name: participanteId
-          in: query
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: campanhaId
-          in: query
-          description: ID da Campanha
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: ano
-          in: query
-          description: Ano
-          required: true
-          schema:
-            type: integer
-        - name: mes
-          in: query
-          description: Mês
-          required: true
-          schema:
-            type: integer
-        - name: intervaloMeses
-          in: query
-          description: Intervalo de meses
-          required: true
-          schema:
-            type: integer
-        - name: filtroId
-          in: query
-          description: ID do Filtro
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RankingResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-        
-  /api/conteudo/tipos:
-    get:
-      tags:
-        - Conteúdos
-      summary: Obter os tipos de conteúdo
-      description: Obtém os tipos de conteúdo
-      operationId: getTiposConteudo
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ConteudoTipoResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-        
-  /api/conteudo/tipo/{tipoId}:
-    get:
-      tags:
-        - Conteúdos
-      summary: Obter os conteúdos de um tipo
-      description: Obtém os conteúdos de um tipo
-      operationId: getConteudos
-      parameters:
-        - name: tipoId
-          in: path
-          description: ID do Tipo
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ConteudoSimplesResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-        
-  /api/conteudo/{conteudoId}/tipo/{tipoId}:
-    get:
-      tags:
-        - Conteúdos
-      summary: Obter um conteúdo completo
-      description: Obtém um conteúdo completo
-      operationId: getConteudo
-      parameters:
-        - name: conteudoId
-          in: path
-          description: ID do Conteúdo
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: tipoId
-          in: path
-          description: ID do Tipo
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                  $ref: '#/components/schemas/ConteudoResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-        
-  /api/noticias:
-    get:
-      tags:
-        - Notícias
-      summary: Obter as notícias com paginação
-      description: |-
-        Obtém as notícias com paginação.
-        
-        Para obter a <strong>primeira página</strong>, deve-se enviar <strong>pagina = 0.</strong>
-      operationId: getNoticias
-      parameters:
-        - name: participanteId
-          in: query
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: pagina
-          in: query
-          description: Página (zero-based)
-          required: true
-          schema:
-            type: integer
-        - name: quantidade
-          in: query
-          description: Quantidade de itens (padrão 5)
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/NoticiaSimplesResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-          
-  /api/noticia/{noticiaId}:
-    get:
-      tags:
-        - Notícias
-      summary: Obter uma notícia completa
-      description: Obtém uma notícia completa
-      operationId: getNoticia
-      parameters:
-        - name: noticiaId
-          in: path
-          description: ID da Notícia
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: participanteId
-          in: query
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/NoticiaResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-        
-  /api/games:
-    get:
-      tags:
-        - Games
-      summary: Obter lista de games
-      description: Obtém lista de games de acordo com parametrização
-      operationId: getGames
-      parameters:
-        - name: participanteId
-          in: query
-          description: ID do Participante
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: tipo
-          in: query
-          description: ID da Notícia
-          schema:
-            type: integer
-            enum: [1, 2]
-            x-enum-descriptions:
-              - Quiz
-              - Enquete
-      responses:
-        '200':
-          description: Resposta de sucesso
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/GameSimplesResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-      security:
-        - BearerAuth: []
-          
+        - bearerAuth: []
+
 components:
-  schemas:
-    Telefone:
-      type: string
-      pattern: '^[1-9]{2}9?[0-9]{8}$'
-      example: '11988888888'
-      description: Número com DDD (somente números) (dígito 9 obrigatório para celulares)
-      
-    Endereco:
-      type: object
-      properties:
-        rua:
-          type: string
-          description: Logradouro
-        numero:
-          type: string
-          description: Número
-        complemento:
-          type: string
-          description: Complemento
-        cep:
-          type: string
-          description: CEP
-        bairro:
-          type: string
-          description: Bairro
-        cidade:
-          type: string
-          description: Cidade
-        uf:
-          type: string
-          description: UF
-      
-    TokenRequest:
-      type: object
-      properties:
-        grantType:
-          type: string
-          example: client_credentials
-          description: Tipo de autenticação (constante)
-        clientId:
-          type: string
-          format: uuid
-          description: ClientId (fornercido pela EAÍ)
-        clientSecret:
-          type: string
-          description: ClientSecret (fornecido pela EAÍ)
-          
-    TokenResponse:
-      type: object
-      properties:
-        accessToken:
-          type: string
-          description: AccessToken
-        tokenType:
-          type: string
-          description: Tipo do token (Constante)
-          example: Bearer
-        expiresIn:
-          type: integer
-          description: Em quantos segundos o AccessToken expirará
-          example: 1800
-          
-    ParticipanteSimplesResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Identificador único
-          format: uuid
-        nome:
-          type: string
-          description: Nome
-          example: Nome Completo
-        telefone:
-          $ref: '#/components/schemas/Telefone'
-        celular:
-          $ref: '#/components/schemas/Telefone'
-          
-    ParticipanteResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Identificador único
-          format: uuid
-        nome:
-          type: string
-          description: Nome
-          example: Nome Completo
-        telefone:
-          $ref: '#/components/schemas/Telefone'
-        celular:
-          $ref: '#/components/schemas/Telefone'
-        email:
-          type: string
-          description: E-mail
-          format: email
-        endereco:
-          $ref: '#/components/schemas/Endereco'
-          
-    ParticipanteSaldoResponse:
-      type: object
-      properties:
-        sucesso:
-          type: boolean
-          description: Sucesso
-        mensagem:
-          type: string
-          description: Mensagem
-        saldo:
-          type: number
-          format: decimal
-          description: Saldo
-        habilitado:
-          type: boolean
-          description: Habilitado
-          
-    CampanhaResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Identificador único
-          format: uuid
-        nome:
-          type: string
-          description: Nome
-        subtitulo:
-          type: string
-          description: Subtitulo
-        descricao:
-          type: string
-          description: Descrição
-        padrao:
-          type: boolean
-          description: Padrão
-        ordem:
-          type: integer
-          description: Ordenação
-        dataInicial:
-          type: string
-          format: date-time
-        dataFinal:
-          type: string
-          format: date-time
-        status:
-          type: string
-          enum:
-            - Em andamento
-            - Fechada
-            - Em breve
-          
-    MenuResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Identificador único
-          format: uuid
-        nome:
-          type: string
-          description: Nome
-        ordem:
-          type: integer
-          description: Ordenação
-        jornada:
-          type: integer
-          description: |-
-            Enum de Jornada
-            1. FaleConosco
-            2. FAQ
-            3. Extrato
-            4. Ranking
-            5. Conteudo
-            6. Games
-            7. Comunicados
-            8. Catalogo
-            9. Cadastro
-            10. Noticias
-          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-          x-enum-descriptions:
-            - FaleConosco
-            - FAQ
-            - Extrato
-            - Ranking
-            - Conteudo
-            - Games
-            - Comunicados
-            - Catalogo
-            - Cadastro
-            - Noticias
-            
-    ChamadoResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Identificador único
-          format: uuid
-        protocolo:
-          type: string
-          description: Protocolo
-        assunto:
-          type: string
-          description: Assunto
-        mensagem:
-          type: string
-          description: Mensagem
-        ultimaResposta:
-          type: string
-          description: Mensagem
-        status:
-          type: string
-          description: Status
-          enum:
-            - Pendente
-            - Resolvido
-            - Em Andamento
-        dataInclusao:
-          type: string
-          description: Data de Inclusão
-          format: date-time
-    
-    ChamadoRequest:
-      type: object
-      properties:
-        mensagem:
-          type: string
-          description: Mensagem
-        assuntoId:
-          type: string
-          description: ID do Assunto
-          format: uuid
-        participanteId:
-          type: string
-          description: ID do Participante
-          format: uuid
-          
-    AssuntoResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Identificador único
-          format: uuid
-        assunto:
-          type: string
-          description: Assunto
-          
-    ExtratoResponse:
-      type: object
-      properties:
-        texto:
-          type: string
-          description: Nome
-        ordem:
-          type: integer
-          description: Ordenação
-          
-    Distribuidora:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identificador único
-        nome:
-          type: string
-          description: Nome
-        cnpj:
-          type: string
-          description: CNPJ
-    
-    Ano:
-      type: object
-      properties:
-        ano:
-          type: integer
-          description: Ano
-        meses:
-          type: array
-          items:
-            type: integer
-            
-    Liderado:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identificador único
-        nome:
-          type: string
-          description: Nome
-        cpf:
-          type: string
-          description: CPF
-    
-    ExtratoFiltroResponse:
-      type: object
-      properties:
-        distribuidoras:
-          type: array
-          items:
-            $ref: '#/components/schemas/Distribuidora'
-        liderados:
-          type: array
-          items:
-            $ref: '#/components/schemas/Liderado'
-        anos:
-          type: array
-          items:
-            $ref: '#/components/schemas/Ano'
-          
-    RankingPeriodoResponse:
-      type: object
-      properties:
-        intervaloMeses:
-          type: integer
-          description: Quantidade de meses no período
-        nome:
-          type: string
-          description: Nome
-          
-    RankingFiltroResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identificador único
-        nome:
-          type: string
-          description: Nome
-          
-    RankingResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identificador único
-        posicao:
-          type: integer
-          description: Posição
-        pontos:
-          type: integer
-          description: Pontos
-        realizado:
-          type: number # decimal
-          description: Realizado (decimal)
-        usuarioAutenticado:
-          type: boolean
-          description: Resultado do usuário autenticado
-        nomeParticipante:
-          type: string
-          description: Nome do participante
-          
-    ConteudoTipoResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          description: Identificador único
-        nome:
-          type: string
-          description: Nome
-          
-    ConteudoSimplesResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identificador único
-        tipoId:
-          type: integer
-          description: ID do Tipo
-        descricao:
-          type: string
-          description: Descrição
-        ordem:
-          type: integer
-          description: Ordenação
-    
-    ConteudoResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identificador único
-        tipoId:
-          type: integer
-          description: ID do Tipo
-        nome:
-          type: string
-          description: Nome
-        descricao:
-          type: string
-          description: Descrição
-        imagemUrl:
-          type: string
-          description: URL da imagem
-          
-    NoticiaSimplesResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identificador único
-        titulo:
-          type: string
-          description: Título
-        dataPublicacao:
-          type: string
-          format: date-time
-          description: Data de publicação
-          
-    NoticiaResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identificador único
-        titulo:
-          type: string
-          description: Título
-        conteudo:
-          type: string
-          description: Conteúdo (HTML)
-        imagemUrl:
-          type: string
-          description: URL da imagem
-        dataPublicacao:
-          type: string
-          format: date-time
-          description: Data de publicação
-        categorias:
-          type: array
-          items:
-            type: string
-            
-    GameSimplesResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identificador único
-        nome:
-          type: string
-          description: Nome
-        tipo:
-          type: integer
-          description: Tipo (Enum)
-          enum: [1, 2]
-          x-enum-descriptions:
-            - Quiz
-            - Enquete
-        dataInicio:
-          type: string
-          format: date-time
-          description: Data inicial
-        dataFim:
-          type: string
-          format: date-time
-          description: Data final
-          
-    ErrorResponse:
-      type: object
-      properties:
-        mensagem:
-          type: string
-        redirecionaUrl:
-          type: string
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  schemas:
+    BuscaParticipanteRequest:
+      type: object
+      properties:
+        Celular:
+          type: string
+          description: Número de celular com DDD (somente números)
+          example: "11912345678"
+
+    BuscaParticipanteResponse:
+      type: object
+      properties:
+        Erro:
+          type: object
+          example: null
+          properties:
+            Mensagem: 
+              type: object
+              description: Mensagem e erro
+        Encontrado:
+          type: boolean
+          description: Indica se existe um participante com o número de celular informado
+          example: true
+
+    ValidaParticipanteRequest:
+      type: object
+      properties:
+        Celular:
+          type: string
+          description: Número do celular com DDD (somente números)
+          example: 11912345678
+        Email:
+          type: string
+          description: E-mail a ser validado
+          example: "email@test.com"
+
+    ValidaParticipanteResponse:
+      type: object
+      properties:
+        Erro:
+          type: object
+          description: Indica se ocorreu algum erro na validação
+          example: null
+        ParticipanteId:
+          type: integer
+          description: Identificador único do participante
+          example: 321
+        Nome:
+          type: string
+          example: "email@example.com"
+        Campanha:
+          type: string
+          example: "Incentivo Cliente"
+
+    AcessoParticipanteResponse:
+      type: object
+      properties:
+        URL:
+          type: string
+          example: "https://urldeacesso.com"
+
+    AssuntoResponse:
+      type: object
+      properties:
+        AssuntoId:
+          type: integer
+          description: Identificador único do assunto
+          example: 1
+        Assunto:
+          type: string
+          description: Assunto
+          example: "Pedidos"
+
+    ItemListaChamadosResponse:
+      type: object
+      description: Item da lista de chamados do participante
+      properties:
+        ChamadoId:
+          type: integer
+          description: Identificador único do chamado
+          example: 450
+        Assunto:
+          type: string
+          description: Assunto do chamado
+          example: "Dúvida"
+        Status:
+          type: string
+          description: Status do chamado
+          example: "Em Andamento"
+        DataAbertura:
+          type: string
+          format: date-time
+          description: Data e hora de abertura do chamado
+          example: "2025-06-21T10:32:00Z"
+
+    ChamadoRequest:
+      type: object
+      properties:
+        ParticipanteId:
+          type: integer
+          description: Identificador único do participante
+          example: 7765
+        ChamadoId:
+          type: integer
+          description: Identificador único do chamado
+          example: 2
+
+    ChamadoResponse:
+      type: object
+      properties:
+        ChamadoId:
+          type: integer
+          description: Identificador único
+          example: 450
+        Assunto:
+          type: string
+          description: Assunto
+          example: "Dúvida"
+        Mensagem:
+          type: string
+          description: Mensagem
+        UltimaResposta:
+          type: string
+          description: Mensagem da última resposta do suporte
+        Status:
+          type: string
+          description: Status
+          enum:
+            - Aberto
+            - Em análise
+            - Em Andamento
+            - Resolvido
+        DataAbertura:
+          type: string
+          description: Data de Inclusão
+          format: date-time
+
+    NovoChamadoRequest:
+      type: object
+      properties:
+        ParticipanteId:
+          type: integer
+          description: Identificador único do participante
+          example: 7765
+        AssuntoId:
+          type: integer
+          description: Identificador único do assunto
+          example: 1
+        Mensagem:
+          type: string
+          description: Mensagem
+          example: "string"
+
+    ItemListaPedidosResponse:
+      type: object
+      description: Item da lista de pedidos do participante
+      properties:
+        PedidoId:
+          type: integer
+          description: Identificador único do pedido
+          example: 450
+        TipoProduto:
+          type: string
+          description: Identificador do tipo de produto, que não precisa ser apresentado para o participante, mas será necessário para solicitar os detalhes do pedido
+          enum:
+            - LVT
+            - GFT
+            - TFB
+            - ...
+        Produto:
+          type: string
+          description: Nome do produto resgatado no pedido
+          example: "Transferência Bancária"
+        Status:
+          type: string
+          description: Status do pedido
+          example: "Confirmado"
+        DataPedido:
+          type: string
+          format: date-time
+          description: Data e hora do pedido
+          example: "2025-06-21T10:32:00Z"
+
+    PedidoRequest:
+      type: object
+      properties:
+        ParticipanteId:
+          type: integer
+          description: Identificador único do participante
+          example: 7765
+        PedidoId:
+          type: integer
+          description: Identificador do pedido
+          example: 587
+        TipoProduto:
+          type: string
+          description: Identificador do tipo de produto
+          enum:
+            - LVT
+            - GFT
+            - TFB
+            - ...
+
+    PedidoResponse:
+      type: object
+      description: Item da lista de pedidos do participante
+      properties:
+        PedidoId:
+          type: integer
+          description: Identificador único do pedido
+          example: 450
+        Produto:
+          type: string
+          description: Produto(s) resgatado(s) no pedido
+          example: "1x Liquidificador, 1x Ferro de passar"
+        Tracking:
+          type: string
+          description: Informações relacionadas ao monitoramento do pedido
+          example: "Previsão de entrega: X dias úteis"
+        Status:
+          type: string
+          description: Status atual do pedido
+          example: "Confirmado"
+        DataPedido:
+          type: string
+          format: date-time
+          description: Data e hora do pedido
+          example: "2025-06-21T10:32:00Z"
+
+    ParticipanteRequest:
+      type: object
+      properties:
+        ParticipanteId:
+          type: integer
+          description: Identificador único do participante
+          example: 123
+      required:
+        - ParticipanteId
+
+    ErroResponse:
+      type: object
+      properties:
+        Mensagem:
+          type: string
+          example: "Participante não encontrado"
