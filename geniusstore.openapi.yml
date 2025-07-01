@@ -84,6 +84,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BuscaParticipanteResponse'
+              examples:
+                sucesso:
+                  summary: Retorno de sucesso
+                  value:
+                    - Erro: null
+                      Encontrado: true
+                erroValidacao:
+                  summary: Exemplo de erro de validação no 200
+                  value:
+                    - Erro:
+                        Mensagem: "Participante Inativo."
+                      Encontrado: true
+                    - Erro:
+                        Mensagem: "Participante ainda não efetuou a validação do número de celular."
+                      Encontrado: true
+                    - Erro:
+                        Mensagem: "Participante não pertence a campanha ou a campanha já encerrou."
+                      Encontrado: true
         '400':
           description: Campo celular não fornecido
           content:
