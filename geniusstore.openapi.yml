@@ -171,6 +171,8 @@ paths:
     post:
       tags:
         - Participantes
+      parameters:
+        - $ref: '#/components/parameters/SessionIdHeader'
       summary: Retorna url para acesso ao catálogo
       description: |
         Valida se o participante faz parte de uma campanha com login SSO (Single Sign On), para retornar a url de acesso
@@ -436,6 +438,16 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  parameters:
+    SessionIdHeader:
+      name: X-Session-Id
+      in: header
+      description: Identificador único da sessão do participante
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   schemas:
     BuscaParticipanteRequest:
