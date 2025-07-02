@@ -142,6 +142,7 @@ paths:
                       ParticipanteId: 123
                       Nome: "João da Silva"
                       Campanha: "Incentivo Cliente"
+                      Sessao: "f4635d39-0270-4ab8-914b-a832b7304207"
                 erroValidacao:
                   summary: Exemplo de erro de validação no 200
                   value:
@@ -150,16 +151,19 @@ paths:
                       ParticipanteId: null
                       Nome: null
                       Campanha: null
+                      Sessao: null
                     - Erro:
                         Mensagem: "Participante ainda não efetuou a validação do número de celular."
                       ParticipanteId: null
                       Nome: null
                       Campanha: null
+                      Sessao: null
                     - Erro:
                         Mensagem: "Participante não pertence a campanha ou a campanha já encerrou."
                       ParticipanteId: null
                       Nome: null
                       Campanha: null
+                      Sessao: null
         '400':
           description: Campo celular e/ou email não fornecidos ou mal formatados
         '404':
