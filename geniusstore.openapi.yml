@@ -210,12 +210,20 @@ paths:
         - bearerAuth: []
 
   /api/faleconosco/assuntos:
-    get:
+    post:
       tags:
         - Fale Conosco
+      parameters:
+        - $ref: '#/components/parameters/SessionIdHeader'
       summary: Lista assuntos do fale conosco
       description: Obtém assuntos do fale conosco para abertura de chamados
       operationId: listaAssuntosFaleConosco
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipanteRequest'
       responses:
         '200':
           description: Resposta de sucesso
