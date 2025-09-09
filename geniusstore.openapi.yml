@@ -22,6 +22,8 @@ tags:
     description: Métodos de acesso aos pedidos do participante
   - name: Fale Conosco
     description: Métodos de acesso aos chamados do participante
+  - name: RateLimit
+    description: Verificação de créditos/tokens para acesso a funcionalidades do Incentizap
 paths:
   /token:
     post:
@@ -464,6 +466,69 @@ paths:
       security:
         - bearerAuth: []
 
+  /api/ratelimit/pesquisa:
+    post:
+      tags:
+        - RateLimit
+      summary: Valida se o participante tem créditos para efetuar pesquisa na IA
+      operationId: validarPesquisaPorParticipante
+      description: |
+        Endpoint utilizado para verificar se o participante tem tokens disponíveis para realizar consultas na IA.
+        Verifica a campanha associada ao participante e se está dentro do horário de funcionamento.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipanteRequest'
+      responses:
+        '200':
+          description: Resultado da validação da pesquisa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatelimitResponse'
+        '400':
+          description: Requisição inválida (ex: participanteId não enviado)
+        '401':
+          description: Sessão inválida ou não autorizada
+        '500':
+          description: Erro interno no servidor
+      security:
+        - bearerAuth: []
+  
+  /api/ratelimit/celular/{celular}:
+    get:
+      tags:
+        - RateLimit
+      summary: Valida se o celular tem créditos para acessar o fale conosco
+      operationId: validarAcessoPorCelular
+      description: |
+        Valida o acesso ao "fale conosco" utilizando apenas o número de celular, sem necessidade de autenticação do participante.
+      parameters:
+        - name: celular
+          in: path
+          required: true
+          description: Número do celular no formato brasileiro (com DDD)
+          schema:
+            type: string
+            example: "11912345678"
+      responses:
+        '200':
+          description: Resultado da validação do celular
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatelimitResponse'
+        '400':
+          description: Celular ausente ou inválido
+        '401':
+          description: Não autorizado
+        '500':
+          description: Erro interno no servidor
+      security:
+        - bearerAuth: []
+
 components:
   securitySchemes:
     bearerAuth:
@@ -729,3 +794,12 @@ components:
         Mensagem:
           type: string
           example: "Participante não encontrado"
+
+    RatelimitResponse:
+      type: object
+      properties:
+        Liberado:
+          type: boolean
+          example: true
+        Erro:
+          $ref: '#/components/schemas/ErroResponse'
