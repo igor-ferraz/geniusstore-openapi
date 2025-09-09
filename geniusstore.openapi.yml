@@ -492,11 +492,9 @@ paths:
           description: |
             Requisição inválida (ex: participanteId não enviado)
         '401':
-          description: |
-            Sessão inválida ou não autorizada
+          description: Sessão inválida ou não autorizada
         '500':
-          description: |
-            Erro interno no servidor
+          description: Erro interno no servidor
       security:
         - bearerAuth: []
   
