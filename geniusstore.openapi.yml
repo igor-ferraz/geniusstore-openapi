@@ -66,19 +66,21 @@ paths:
           description: Requisição inválida ou credenciais incorretas
 
   /api/participantes/busca:
-    post:
+    get:
       tags:
         - Participantes
       summary: Busca participante através do número de celular
       description: |
         Busca um participante a partir do número de celular informado no corpo da requisição. Valida se está ativo, com o número validado e vinculado à campanha do token.
       operationId: buscaParticipante
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BuscaParticipanteRequest'
+      parameters:
+        - name: celular
+          in: path
+          required: true
+          description: Número do celular no formato brasileiro (com DDD)
+          schema:
+            type: string
+            example: "11912345678"
       responses:
         '200':
           description: Resultado da busca
