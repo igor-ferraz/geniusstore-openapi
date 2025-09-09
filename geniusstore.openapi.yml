@@ -65,7 +65,7 @@ paths:
         '400':
           description: Requisição inválida ou credenciais incorretas
 
-  /api/participantes/busca:
+  /api/participantes/busca/{celular}:
     get:
       tags:
         - Participantes
