@@ -353,6 +353,54 @@ paths:
       security:
         - bearerAuth: []
 
+  /api/faleconosco/assuntosdeslogado:
+    get:
+      tags:
+        - Fale Conosco
+      summary: Lista assuntos disponíveis para usuários deslogados
+      description: |
+        Obtém a lista de assuntos do Fale Conosco para exibição na tela inicial, antes do login do participante.
+      operationId: listaAssuntosFaleConoscoDeslogado
+      responses:
+        '200':
+          description: Lista de assuntos retornada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssuntosResponse'
+        '401':
+          description: Não autorizado
+      security:
+        - bearerAuth: []
+
+  /api/faleconosco/deslogado:
+    post:
+      tags:
+        - Fale Conosco
+      summary: Abrir chamado sem login
+      description: |
+        Abre um novo chamado no Fale Conosco sem necessidade de login do participante. O chamado será vinculado apenas aos dados informados no formulário (nome, documento, email e celular).
+      operationId: abrirChamadoDeslogado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NovoChamadoDeslogadoRequest'
+      responses:
+        '200':
+          description: Chamado aberto com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChamadoResponse'
+        '400':
+          description: Requisição inválida (dados obrigatórios ausentes ou inválidos)
+        '401':
+          description: Não autorizado
+      security:
+        - bearerAuth: []
+        
   /api/pontos/saldo:
     post:
       tags:
@@ -550,14 +598,6 @@ components:
         format: uuid
 
   schemas:
-    BuscaParticipanteRequest:
-      type: object
-      properties:
-        Celular:
-          type: string
-          description: Número de celular com DDD (somente números)
-          example: "11912345678"
-
     BuscaParticipanteResponse:
       type: object
       properties:
@@ -806,3 +846,89 @@ components:
           example: true
         Erro:
           $ref: '#/components/schemas/ErroResponse'
+
+    AssuntosResponse:
+      type: object
+      properties:
+        Erro:
+          $ref: '#/components/schemas/ErroResponse'
+        assuntos:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssuntoResponse'
+
+    ChamadosResponse:
+      type: object
+      properties:
+        Erro:
+          $ref: '#/components/schemas/ErroResponse'
+        chamados:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListaChamadosResponse'
+
+    ListaChamadosResponse:
+      type: object
+      properties:
+        ChamadoId:
+          type: integer
+          example: 451
+        Assunto:
+          type: string
+          example: "Pedidos"
+        Status:
+          type: string
+          example: "Em Andamento"
+        DataAbertura:
+          type: string
+          example: "21/06/2025 10:30"
+
+    DetalheChamadoResponse:
+      type: object
+      properties:
+        Erro:
+          $ref: '#/components/schemas/ErroResponse'
+        ChamadoId:
+          type: integer
+        Assunto:
+          type: string
+        Mensagem:
+          type: string
+        UltimaResposta:
+          type: string
+        Status:
+          type: string
+        DataAbertura:
+          type: string
+          description: Data formatada
+          example: "21/06/2025 10:32"
+
+    NovoChamadoDeslogadoRequest:
+      type: object
+      required:
+        - Nome
+        - Documento
+        - Email
+        - Celular
+        - AssuntoId
+        - Mensagem
+      properties:
+        Nome:
+          type: string
+          example: "João da Silva"
+        Documento:
+          type: string
+          example: "12345678900"
+        Email:
+          type: string
+          format: email
+          example: "joao@email.com"
+        Celular:
+          type: string
+          example: "11987654321"
+        AssuntoId:
+          type: integer
+          example: 1
+        Mensagem:
+          type: string
+          example: "Estou com dúvidas sobre minha entrega."
