@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  title: Genius Store API | Incentizap
-  description: API da plataforma Genius Store para integração da .
-  version: 1.0.0
+  title: Genius Store API | Chatbot
+  description: API da plataforma Genius Store para integração com a Blip.
+  version: 1.3.0
   contact:
     name: Angelo Servo
     email: angelo.servo@eaimkt.com.br
@@ -10,7 +10,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 servers:
-  - url: https://pseudo-api.geniustore.com.br
+  - url:  https://ipp.homologcatalogo.com.br
 tags:
   - name: Autenticação
     description: Métodos de autenticação de usuário da API
@@ -23,7 +23,7 @@ tags:
   - name: Fale Conosco
     description: Métodos de acesso aos chamados do participante
   - name: RateLimit
-    description: Verificação de créditos/tokens para acesso a funcionalidades do Incentizap
+    description: Verificação de créditos/tokens para acesso a funcionalidades do Chatbot
 paths:
   /token:
     post:
@@ -38,9 +38,9 @@ paths:
             schema:
               type: object
               required:
-                - grantType
-                - clientId
-                - clientSecret
+                - grant_type
+                - client_id
+                - client_secret
               properties:
                 grant_type:
                   type: string
@@ -125,6 +125,8 @@ paths:
     post:
       tags:
         - Participantes
+      parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
       summary: Efetua a dupla checagem através de e-mail
       description: |
         Valida se o e-mail informado pelo usuário é do participante encontrado via número de celular.
@@ -184,6 +186,7 @@ paths:
       tags:
         - Participantes
       parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
         - $ref: '#/components/parameters/SessionIdHeader'
       summary: Retorna url para acesso ao catálogo
       description: |
@@ -217,11 +220,41 @@ paths:
       security:
         - bearerAuth: []
 
+  /api/participantes/hash/{cs}/{cid}:
+    post:
+      tags:
+        - Participantes
+      summary: Gera hash do client secret
+      operationId: gerarHashClientSecret
+      parameters:
+        - name: cs
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hash gerado com sucesso
+          content:
+            application/json:
+              schema:
+                type: string
+        '401':
+          description: Nao autorizado
+      security:
+        - bearerAuth: []
+
   /api/faleconosco/assuntos:
     post:
       tags:
         - Fale Conosco
       parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
         - $ref: '#/components/parameters/SessionIdHeader'
       summary: Lista assuntos do fale conosco
       description: Obtém assuntos do fale conosco para abertura de chamados
@@ -238,9 +271,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AssuntoResponse'
+                $ref: '#/components/schemas/AssuntosResponse'
         '400':
           description: Bad Request
           content:
@@ -257,6 +288,7 @@ paths:
       tags:
         - Fale Conosco
       parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
         - $ref: '#/components/parameters/SessionIdHeader'
       summary: Obter lista de chamados
       description: |
@@ -274,9 +306,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ItemListaChamadosResponse'
+                $ref: '#/components/schemas/ChamadosResponse'
         '400':
           description: Bad Request
           content:
@@ -295,6 +325,7 @@ paths:
       tags:
         - Fale Conosco
       parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
         - $ref: '#/components/parameters/SessionIdHeader'      
       summary: Obter dados de um chamado do fale conosco
       description: Obtém os dados de um chamado do fale conosco pelo Id do chamado
@@ -311,7 +342,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChamadoResponse'
+                $ref: '#/components/schemas/DetalheChamadoResponse'
         '400':
           description: Bad Request
           content:
@@ -330,11 +361,13 @@ paths:
       tags:
         - Fale Conosco
       parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
         - $ref: '#/components/parameters/SessionIdHeader'      
       summary: Abrir um chamado
       description: Abrir um chamado de fale conosco para um participante
       operationId: abriChamado
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -345,7 +378,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChamadoResponse'
+                $ref: '#/components/schemas/DetalheChamadoResponse'
         '400':
           description: Bad Request
           content:
@@ -397,7 +430,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChamadoResponse'
+                $ref: '#/components/schemas/DetalheChamadoResponse'
         '400':
           description: Requisição inválida (dados obrigatórios ausentes ou inválidos)
         '401':
@@ -410,6 +443,7 @@ paths:
       tags:
         - Pontos
       parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
         - $ref: '#/components/parameters/SessionIdHeader'
       summary: Busca saldo do participante
       description: |
@@ -427,16 +461,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  Saldo:
-                    type: string
-                    description: Saldo de créditos formatado
-                    example: "500,00"
-                  Nome:
-                    type: string
-                    description: Denominação do ponto
-                    example: "PONTOS"
+                $ref: '#/components/schemas/SaldoResponse'
         '400':
           description: Requisição inválida
         '401':
@@ -449,6 +474,7 @@ paths:
       tags:
         - Pedidos
       parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
         - $ref: '#/components/parameters/SessionIdHeader'
       summary: Obter lista de pedidos
       description: |
@@ -466,9 +492,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ItemListaPedidosResponse'
+                $ref: '#/components/schemas/PedidosResponse'
         '400':
           description: Bad Request
           content:
@@ -487,6 +511,7 @@ paths:
       tags:
         - Pedidos
       parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
         - $ref: '#/components/parameters/SessionIdHeader'
       summary: Obter detalhes do pedido solicitado
       description: |
@@ -504,9 +529,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PedidoResponse'
+                $ref: '#/components/schemas/DetalhePedidoResponse'
         '400':
           description: Bad Request
           content:
@@ -520,10 +543,46 @@ paths:
       security:
         - bearerAuth: []
 
+  /api/ratelimit/valida/{celular}:
+    get:
+      tags:
+        - RateLimit
+      parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
+        - name: celular
+          in: path
+          required: true
+          description: Numero do celular no formato brasileiro (com DDD)
+          schema:
+            type: string
+            example: "11912345678"
+      summary: Valida se o participante tem creditos para acessar
+      operationId: validarAcessoPorParticipante
+      description: |
+        Valida se o participante tem creditos disponiveis e, se necessario, retorna URL de redirecionamento.
+      responses:
+        '200':
+          description: Resultado da validacao do participante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatelimitResponse'
+        '400':
+          description: Celular ausente ou invalido
+        '401':
+          description: Nao autorizado
+        '500':
+          description: Erro interno no servidor
+      security:
+        - bearerAuth: []
+
   /api/ratelimit/pesquisa:
     post:
       tags:
         - RateLimit
+      parameters:
+        - $ref: '#/components/parameters/CampanhaIdHeader'
+        - $ref: '#/components/parameters/SessionIdHeader'
       summary: Valida se o participante tem créditos para efetuar pesquisa na IA
       operationId: validarPesquisaPorParticipante
       description: |
@@ -592,6 +651,13 @@ components:
       bearerFormat: JWT
 
   parameters:
+    CampanhaIdHeader:
+      name: X-Campanha-Id
+      in: header
+      description: Identificador da campanha
+      required: true
+      schema:
+        type: integer
     SessionIdHeader:
       name: X-Session-Id
       in: header
@@ -606,16 +672,15 @@ components:
       type: object
       properties:
         Erro:
-          type: object
-          example: null
-          properties:
-            Mensagem: 
-              type: object
-              description: Mensagem e erro
+          $ref: '#/components/schemas/ErroResponse'
         Encontrado:
           type: boolean
-          description: Indica se existe um participante com o número de celular informado
+          description: Indica se existe um participante com o numero de celular informado
           example: true
+        Campanhas:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampanhaResponse'
 
     ValidaParticipanteRequest:
       type: object
@@ -629,33 +694,60 @@ components:
           description: E-mail a ser validado
           example: "email@test.com"
 
+    CampanhaResponse:
+      type: object
+      properties:
+        CampanhaId:
+          type: integer
+          example: 123
+        Nome:
+          type: string
+          example: "Campanha Exemplo"
+
     ValidaParticipanteResponse:
       type: object
       properties:
         Erro:
-          type: object
-          description: Indica se ocorreu algum erro na validação
-          example: null
+          $ref: '#/components/schemas/ErroResponse'
         ParticipanteId:
           type: integer
-          description: Identificador único do participante
-          example: 321
         Nome:
           type: string
-          example: "email@example.com"
         Campanha:
           type: string
-          example: "Incentivo Cliente"
         Sessao:
           type: string
-          example: "f4635d39-0270-4ab8-914b-a832b7304207"
 
     AcessoParticipanteResponse:
       type: object
       properties:
+        Erro:
+          $ref: '#/components/schemas/ErroResponse'
         URL:
           type: string
           example: "https://urldeacesso.com"
+
+    SaldoResponse:
+      type: object
+      properties:
+        Erro:
+          $ref: '#/components/schemas/ErroResponse'
+        Saldo:
+          type: string
+          example: "500,00"
+        Nome:
+          type: string
+          example: "PONTOS"
+
+    PedidosResponse:
+      type: object
+      properties:
+        Erro:
+          $ref: '#/components/schemas/ErroResponse'
+        pedidos:
+          type: array
+          items:
+            $ref: '#/components/schemas/PedidoResponse'
 
     AssuntoResponse:
       type: object
@@ -735,14 +827,18 @@ components:
 
     NovoChamadoRequest:
       type: object
+      required:
+        - ParticipanteId
+        - AssuntoId
+        - Mensagem
       properties:
         ParticipanteId:
           type: integer
-          description: Identificador único do participante
+          description: Identificador do participante
           example: 7765
         AssuntoId:
           type: integer
-          description: Identificador único do assunto
+          description: Identificador do assunto
           example: 1
         Mensagem:
           type: string
@@ -781,10 +877,14 @@ components:
 
     PedidoRequest:
       type: object
+      required:
+        - ParticipanteId
+        - PedidoId
+        - TipoProduto
       properties:
         ParticipanteId:
           type: integer
-          description: Identificador único do participante
+          description: Identificador do participante
           example: 7765
         PedidoId:
           type: integer
@@ -801,29 +901,31 @@ components:
 
     PedidoResponse:
       type: object
-      description: Item da lista de pedidos do participante
       properties:
         PedidoId:
           type: integer
-          description: Identificador único do pedido
-          example: 450
+        TipoProduto:
+          type: string
+        Titulo:
+          type: string
+        Descricao:
+          type: string
+
+    DetalhePedidoResponse:
+      type: object
+      properties:
+        Erro:
+          $ref: '#/components/schemas/ErroResponse'
+        PedidoId:
+          type: integer
         Produto:
           type: string
-          description: Produto(s) resgatado(s) no pedido
-          example: "1x Liquidificador, 1x Ferro de passar"
         Tracking:
           type: string
-          description: Informações relacionadas ao monitoramento do pedido
-          example: "Previsão de entrega: X dias úteis"
         Status:
           type: string
-          description: Status atual do pedido
-          example: "Confirmado"
         DataPedido:
           type: string
-          format: date-time
-          description: Data e hora do pedido
-          example: "2025-06-21T10:32:00Z"
 
     ParticipanteRequest:
       type: object
@@ -845,11 +947,17 @@ components:
     RatelimitResponse:
       type: object
       properties:
+        Erro:
+          $ref: '#/components/schemas/ErroResponse'
         Liberado:
           type: boolean
           example: true
-        Erro:
-          $ref: '#/components/schemas/ErroResponse'
+        Mensagem:
+          type: string
+        Redirecionar:
+          type: boolean
+        URL:
+          type: string
 
     AssuntosResponse:
       type: object
@@ -876,16 +984,10 @@ components:
       properties:
         ChamadoId:
           type: integer
-          example: 451
-        Assunto:
+        Titulo:
           type: string
-          example: "Pedidos"
-        Status:
+        Descricao:
           type: string
-          example: "Em Andamento"
-        DataAbertura:
-          type: string
-          example: "21/06/2025 10:30"
 
     DetalheChamadoResponse:
       type: object
@@ -936,3 +1038,4 @@ components:
         Mensagem:
           type: string
           example: "Estou com dúvidas sobre minha entrega."
+
