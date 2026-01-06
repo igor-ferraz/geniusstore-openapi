@@ -96,20 +96,17 @@ paths:
                 sucesso:
                   summary: Retorno de sucesso
                   value:
-                    - Erro: null
-                      Encontrado: true
+                    Erro: null
+                    Encontrado: true
+                    Campanhas:
+                      - CampanhaId: 123
+                        Nome: "Campanha Exemplo"
                 erroValidacao:
-                  summary: Exemplo de erro de validação no 200
+                  summary: Exemplo de erro de valida????o no 200
                   value:
-                    - Erro:
-                        Mensagem: "Participante Inativo."
-                      Encontrado: true
-                    - Erro:
-                        Mensagem: "Participante ainda não efetuou a validação do número de celular."
-                      Encontrado: true
-                    - Erro:
-                        Mensagem: "Participante não pertence a campanha ou a campanha já encerrou."
-                      Encontrado: true
+                    Erro:
+                      Mensagem: "Participante Inativo."
+                    Encontrado: true
         '400':
           description: Campo celular não fornecido
           content:
@@ -217,35 +214,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErroResponse'
-      security:
-        - bearerAuth: []
-
-  /api/participantes/hash/{cs}/{cid}:
-    post:
-      tags:
-        - Participantes
-      summary: Gera hash do client secret
-      operationId: gerarHashClientSecret
-      parameters:
-        - name: cs
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: cid
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Hash gerado com sucesso
-          content:
-            application/json:
-              schema:
-                type: string
-        '401':
-          description: Nao autorizado
       security:
         - bearerAuth: []
 
